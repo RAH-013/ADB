@@ -156,3 +156,5 @@ router.post("/logout", async (req, res) => {
   pool = null;
   res.json({ message: "Sesión cerrada." });
 });
+
+//diego
