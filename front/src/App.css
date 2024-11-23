@@ -1,0 +1,283 @@
+/* Pagina: 404 */
+.page404 {
+  width: 100%;
+  height: 100vh;
+  background-color: #1f3555;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rem;
+  text-align: center;
+}
+
+.page404 h1 {
+  font-size: 120px;
+  color: goldenrod;
+  margin: 0;
+  animation: pulse 5s infinite;
+}
+
+.page404 p {
+  font-size: 18px;
+  color: #d1e6fa;
+  margin: 0;
+}
+
+.page404 button {
+  padding: 0.8rem 1.6rem;
+  background-color: #3da0fd;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 300ms ease-in-out, transform 200ms ease-in-out;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.page404 button:hover {
+  background-color: #2a78c2;
+  transform: scale(1.05);
+}
+
+.page404 button:active {
+  transform: scale(0.95);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 10px goldenrod, 0 0 20px goldenrod;
+  }
+  50% {
+    transform: scale(1.1);
+    text-shadow: 0 0 20px goldenrod, 0 0 40px goldenrod;
+  }
+}
+/* Fin de la pagina: Conexiones */
+/* Pagina: 404 */
+.connectionsPage {
+  width: 100%;
+  height: 100vh;
+}
+
+.connectionsPage header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: #1f3555;
+  color: white;
+}
+
+.headerActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .connectionsPage header {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .headerActions {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 1rem;
+  }
+
+  .btnAgregar,
+  .btnEditar,
+  .btnEliminar {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .connectionsPage header {
+    padding: 0.5rem;
+  }
+
+  .btnAgregar,
+  .btnEditar,
+  .btnEliminar {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
+.btnAgregar,
+.btnEditar,
+.btnEliminar {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: transparent;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 300ms ease-in-out;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btnEliminar {
+  border: 2px solid rgb(224, 75, 75);
+  color: rgb(224, 75, 75);
+}
+
+.btnEliminar:hover {
+  background-color: rgb(224, 75, 75);
+  color: white;
+}
+
+.btnEditar {
+  border: 2px solid #3da0fd;
+  color: #3da0fd;
+}
+
+.btnEditar:hover {
+  background-color: #3da0fd;
+  color: white;
+}
+
+.btnAgregar {
+  border: 2px solid rgb(71, 149, 71);
+  color: rgb(71, 149, 71);
+}
+
+.btnAgregar:hover {
+  background-color: rgb(71, 149, 71);
+  color: white;
+}
+
+.swal-title-custom {
+  background-color: #1f3555;
+  color: white;
+  padding: 1rem;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.swal-actions-custom {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  margin: 1rem 0;
+}
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.authForm div {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.formLabel {
+  display: flex;
+  flex-direction: column;
+}
+
+.formLabel input {
+  padding: 0.5rem;
+  border: none;
+  outline: none;
+  border-bottom: 2px solid #1b3d58;
+  background-color: #f1faff;
+  color: #1b3d58;
+  font-size: 16px;
+  text-align: center;
+}
+
+.formLabel input:focus {
+  border-bottom: 2px solid #20b3cd;
+}
+
+.containerConnection {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.itemConnection {
+  position: relative;
+  border: 2px dotted #275072;
+  background-color: #a5bed0;
+  color: #1b3d58;
+  padding: 1rem;
+  cursor: pointer;
+  transition: 300ms ease-in-out;
+}
+
+.itemConnection:hover {
+  background-color: #829caf;
+}
+
+.itemConnection svg {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  bottom: 0;
+  right: 0;
+  fill: #829caf;
+  transition: 300ms ease-in-out;
+}
+
+.itemConnection:hover svg {
+  fill: #576d7c;
+}
+
+.itemConnection h3 {
+  margin-bottom: 1rem;
+}
+
+.itemConnection p {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: 0.2rem;
+}
+
+.itemConnection p i {
+  width: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contexMenuSelect {
+  border: 2px solid #275072;
+  background-color: #829caf;
+  transform: scale(0.9);
+}
+
+.contexMenuSelect svg {
+  fill: #576d7c;
+}
+
+/* Fin de la pagina: Conexiones */
