@@ -58,8 +58,8 @@
     text-shadow: 0 0 20px goldenrod, 0 0 40px goldenrod;
   }
 }
-/* Fin de la pagina: Conexiones */
-/* Pagina: 404 */
+/* Fin de la pagina: 404 */
+/* Pagina: Conexiones */
 .connectionsPage {
   width: 100%;
   height: 100vh;
@@ -281,3 +281,122 @@
 }
 
 /* Fin de la pagina: Conexiones */
+/* Pagina: Home */
+.containerHome header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: #1f3555;
+  color: white;
+}
+
+.containerHome .logo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.containerHome header img {
+  width: 50px;
+  margin-right: 1rem;
+}
+
+.containerHome header button {
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.containerHome header button:hover {
+  background-color: #b71c1c;
+}
+
+.containerHome header button:active {
+  transform: scale(0.98);
+}
+
+.containerHome {
+  width: 100%;
+  height: 100vh;
+}
+
+.containerGrid {
+  width: 100%;
+  height: calc(100vh - 50px - 2rem);
+  display: flex;
+  flex-direction: row;
+}
+
+.containerSchemas {
+  width: 25%;
+  height: 100%;
+  overflow-y: auto;
+  border-right: 3px solid #1b3d58;
+}
+
+.conatinerRight {
+  width: 75%;
+  height: 100%;
+}
+
+.containerQuery {
+  width: 100%;
+  height: 30%;
+}
+
+.containerTable {
+  width: 100%;
+  height: 70%;
+}
+
+.containerQuery textarea {
+  resize: none;
+  font-size: 15px;
+}
+
+.headerTable {
+  background-color: #1b3d58;
+  color: white;
+  padding: 0.5rem 2rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tableActions {
+  display: flex;
+  gap: 1rem;
+  flex-direction: row;
+}
+
+.tableActions button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  font-size: 15px;
+  color: white;
+  cursor: pointer;
+}
+
+.closeTable {
+  background-color: #d32f2f;
+}
+
+.table {
+  width: 100%;
+  height: calc(100% - 1rem - 32px);
+}
+/* Fin de la pagina: Home */

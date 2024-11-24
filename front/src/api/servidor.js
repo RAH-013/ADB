@@ -1,6 +1,6 @@
-import axios from "axios";
+import apiAxios from "./axios.js";
 
-const URI = "http://localhost:4000";
-
-export const auth = async (form) => await axios.post(`${URI}/auth`, form);
-export const schemas = async () => await axios.get(`${URI}/schemas`);
+export const auth = async (form) => await apiAxios.post("/auth", form);
+export const logout = async () => await apiAxios.get("/logout");
+export const schemas = async () => await apiAxios.get("/schemas");
+export const getTable = async (schema, table) => await apiAxios.get(`/tables/${schema}/${table}`);
