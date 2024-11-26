@@ -1,4 +1,6 @@
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import { dropTable } from "../api/servidor";
+import Swal from "sweetalert2";
 
 const esES = {
   // Root
@@ -181,23 +183,76 @@ const esES = {
   aggregationFunctionLabelSize: "tamaño",
 };
 
-function Table({ rows, columns, title, onClose }) {
+function Table({ rows, columns, title, schema, onClose }) {
+  const drop = () => {
+    try {
+      Swal.fire({
+        title: "¿Estás seguro?",
+        text: "Confirma para eliminar la tabla: " + title,
+        icon: "info",
+        showCancelButton: true,
+        confirmButtonText: "Eliminar",
+        cancelButtonText: "Cancelar",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const res = await dropTable(schema, title);
+            if (res.status === 200) {
+              Swal.fire({
+                title: "Éxito",
+                text: res.data.message,
+                icon: "success",
+              }).then(() => {
+                onClose();
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              title: "Error",
+              text: "Hubo un problema al eliminar la tabla: " + error,
+              icon: "error",
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        title: "Error",
+        text: "Error al tratar de borrar la tabla: " + error,
+        icon: "error",
+      });
+    }
+  };
+
   return (
     <div className="containerTable">
       <div className="headerTable">
         <h2>{title}</h2>
         <div className="tableActions">
-          <button className="closeTable" type="button">
-            <i className="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button className="closeTable" type="button">
-            <i className="fa-solid fa-gear"></i>
-          </button>
-          <button className="closeTable" type="button" onClick={onClose}>
+          {schema !== "" && (
+            <>
+              <button className="closeTable" type="button" title="Eliminar tabla" onClick={drop}>
+                <i className="fa-solid fa-trash"></i>
+              </button>
+              <button className="closeTable" type="button" title="Editar registro">
+                <i className="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button className="closeTable" type="button" title="Ver propiedades">
+                <i className="fa-solid fa-gear"></i>
+              </button>
+              <button className="closeTable" type="button" title="Ver información">
+                <i className="fa-solid fa-circle-info"></i>
+              </button>
+            </>
+          )}
+
+          <button className="closeTable" type="button" title="Cerrar tabla" onClick={onClose}>
             <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
       </div>
+
       <div className="table">
         <DataGrid
           rows={rows}
@@ -209,7 +264,15 @@ function Table({ rows, columns, title, onClose }) {
           slots={{
             toolbar: GridToolbar,
           }}
-          slotProps={{ toolbar: { printOptions: { disableToolbarButton: true } } }}
+          slotProps={{
+            toolbar: {
+              printOptions: { disableToolbarButton: true },
+              csvOptions: { fileName: title },
+              sx: {
+                backgroundColor: "white",
+              },
+            },
+          }}
         />
       </div>
     </div>

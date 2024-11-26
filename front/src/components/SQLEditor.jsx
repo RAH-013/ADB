@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { formatDialect, mysql } from "sql-formatter";
+import Swal from "sweetalert2";
 
-const SQLEditor = ({ value, onChange, schemasInfo }) => {
+const SQLEditor = ({ value, onChange, onExecuteQuery, schemasInfo }) => {
   const editorRef = useRef(null);
   const schemasInfoRef = useRef(schemasInfo);
 
@@ -40,6 +41,7 @@ const SQLEditor = ({ value, onChange, schemasInfo }) => {
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     const sqlKeywords = [
+      "USE",
       "SELECT",
       "FROM",
       "WHERE",
@@ -56,6 +58,32 @@ const SQLEditor = ({ value, onChange, schemasInfo }) => {
       "ORDER",
       "HAVING",
       "LIMIT",
+      "AS",
+      "IF",
+      "ELSE",
+      "CASE",
+      "WHEN",
+      "THEN",
+      "END",
+      "AND",
+      "OR",
+      "NOT",
+      "IS",
+      "NULL",
+      "IN",
+      "EXISTS",
+      "BETWEEN",
+      "LIKE",
+      "ASC",
+      "DESC",
+      "DISTINCT",
+      "INTO",
+      "VALUES",
+      "SET",
+      "CREATE",
+      "SCHEMA",
+      "DROP",
+      "TABLE",
     ];
 
     monaco.languages.register({ id: "sql" });
@@ -63,20 +91,19 @@ const SQLEditor = ({ value, onChange, schemasInfo }) => {
     monaco.languages.setMonarchTokensProvider("sql", {
       tokenizer: {
         root: [
-          [/\b(?:SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|INNER|OUTER|LEFT|RIGHT|GROUP|BY|ORDER|HAVING|LIMIT)\b/, "keyword"],
-
-          [/[a-zA-Z_][a-zA-Z0-9_]*/, "identifier"],
-
+          [
+            /\b(?:SELECT|TABLE|DROP|SCHEMA|CREATE|USE|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|INNER|OUTER|LEFT|RIGHT|GROUP|BY|ORDER|HAVING|LIMIT|AS|IF|ELSE|CASE|WHEN|THEN|END|AND|OR|NOT|IS|NULL|IN|EXISTS|BETWEEN|LIKE|ASC|DESC|DISTINCT|INTO|VALUES|SET)\b/,
+            "keyword",
+          ],
+          [/[a-zA-Z_][a-zA-Z0-9_]*/, "identifier"], // Identificador para nombres de tablas/esquemas
           [/'(?:\\'|[^'])*'/, "string"],
-
+          [/"(?:\\"|[^"])*"/, "string"],
+          [/`(?:\\`|[^`])*`/, "string"],
           [/\b\d+(\.\d+)?\b/, "number"],
-
           [/[=<>!]+/, "operator"],
-
           [/--.*$/, "comment"],
           [/\/\*/, { token: "comment", next: "@comment" }],
         ],
-
         comment: [
           [/\*\//, "comment", "@pop"],
           [/./, "comment"],
@@ -137,48 +164,116 @@ const SQLEditor = ({ value, onChange, schemasInfo }) => {
     monaco.editor.setTheme("adbSystemeTheme");
   };
 
-  const handleAction = (action) => {
+  const openQuery = () => {
     const editor = editorRef.current;
     if (!editor) return;
 
-    switch (action) {
-      case "open":
-        alert("Abrir archivo no implementado aún.");
-        break;
-      case "save":
-        const content = editor.getValue();
-        alert(`Guardando contenido:\n${content}`);
-        break;
-      case "format":
-        const contentToFormat = editor.getValue();
-        const formattedContent = formatDialect(contentToFormat, { dialect: mysql, keywordCase: "upper" });
-        editor.setValue(formattedContent);
-        break;
-      case "execute":
-        alert("Ejecutando SQL:\n" + editor.getValue());
-        break;
-      case "copy":
-        navigator.clipboard.writeText(editor.getValue());
-        alert("Contenido copiado al portapapeles.");
-        break;
-      default:
-        break;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".sql";
+
+    input.onchange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target.result;
+          editor.setValue(content);
+        };
+        reader.readAsText(file);
+      }
+    };
+
+    input.click();
+  };
+
+  const saveQuery = async () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const content = editor.getValue();
+    const blob = new Blob([content], { type: "text/sql" });
+
+    try {
+      const archivoHandle = await window.showSaveFilePicker({
+        suggestedName: "newQuery.sql",
+        types: [
+          {
+            description: "SQL Files",
+            accept: { "text/sql": [".sql"] },
+          },
+        ],
+      });
+
+      const writable = await archivoHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+
+      Swal.fire({
+        title: "Exito",
+        text: "Archivo guardado exitosamente.",
+        icon: "success",
+      });
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        Swal.fire({
+          title: "Error",
+          text: "Error al guardar el archivo: " + error,
+          icon: "error",
+        });
+      }
+    }
+  };
+
+  const formatQuery = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const contentToFormat = editor.getValue();
+    const formattedContent = formatDialect(contentToFormat, { dialect: mysql, keywordCase: "upper" });
+    editor.setValue(formattedContent);
+  };
+
+  const execute = async () => {
+    try {
+      const editor = editorRef?.current;
+      if (!editor) {
+        console.warn("El editor no está inicializado.");
+        return;
+      }
+
+      const selectionRange = editor.getSelection();
+      const selection = selectionRange ? editor.getModel().getValueInRange(selectionRange) : "";
+      const query = selection.trim() ? selection : editor.getValue();
+
+      if (!query.trim()) {
+        Swal.fire({
+          title: "Advertencia",
+          text: "El editor está vacío, no hay consulta para ejecutar.",
+          icon: "warning",
+        });
+        return;
+      }
+
+      await onExecuteQuery(query);
+    } catch (error) {
+      console.error("Error al ejecutar la consulta:", error);
     }
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div className="queryHeader">
-        <button type="button" title="Abrir archivo" onClick={() => handleAction("open")}>
+        <button type="button" title="Abrir archivo" onClick={openQuery}>
           <i className="fa-solid fa-folder"></i>
         </button>
-        <button type="button" title="Guardar como" onClick={() => handleAction("save")}>
+        <button type="button" title="Guardar como" onClick={saveQuery}>
           <i className="fa-solid fa-floppy-disk"></i>
         </button>
-        <button type="button" title="Formatear" onClick={() => handleAction("format")}>
+        <button type="button" title="Formatear" onClick={formatQuery}>
           <i className="fa-solid fa-brush"></i>
         </button>
-        <button type="button" title="Ejecutar" onClick={() => handleAction("execute")}>
+        <button type="button" title="Ejecutar" onClick={execute}>
           <i className="fa-solid fa-bolt"></i>
         </button>
       </div>

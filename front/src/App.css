@@ -356,6 +356,8 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  z-index: 4;
 }
 
 .tableActions {
@@ -377,6 +379,10 @@
   cursor: pointer;
 }
 
+.schemaTrash{
+  color: #d32f2f;
+}
+
 .closeTable {
   background-color: #d32f2f;
 }
@@ -390,6 +396,7 @@
   background-color: rgb(208, 219, 255);
   border: 1px dotted rgb(62, 62, 62);
   cursor: row-resize;
+  bottom: 0 !important;
 }
 
 .resize-handle-right {
@@ -400,8 +407,32 @@
 }
 
 .containerSchemas {
-  height: 100%;
   z-index: 5;
+}
+
+.containerTree {
+  width: calc(100% - 10px);
+  height: calc(100% - 3rem - 80px);
+  overflow-y: auto;
+}
+
+.containerTree::-webkit-scrollbar {
+  width: 8px;
+}
+
+.containerTree::-webkit-scrollbar-thumb {
+  background-color: #1f3555;
+  border-radius: 4px;
+  border: 2px solid #ffffff;
+}
+
+.containerTree::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.containerTree::-webkit-scrollbar-thumb:hover {
+  background-color: #0056b3;
 }
 
 .containerRight {
@@ -448,6 +479,74 @@
 
 .queryHeader button:focus {
   outline: 2px solid #0056b3; /* Contorno para accesibilidad */
+}
+
+.schemas-header {
+  width: calc(100% - 10px - 2rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1rem;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+}
+
+.schemas-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.reload-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background-color: rgba(32, 106, 185, 0.8);
+  border: 2px solid rgba(32, 106, 185);
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.reload-button:hover {
+  background-color: rgb(14, 59, 107);
+}
+
+.reload-button:active {
+  transform: scale(0.95); /* Animación de clic */
+}
+
+.reload-button i {
+  pointer-events: none; /* Evita que los iconos interfieran con los clics */
+}
+
+.reload-button:focus {
+  outline: 2px solid #0056b3; /* Contorno para accesibilidad */
+}
+
+.search-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: calc(80% - 10px);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #007bff;
 }
 
 /* Fin de la pagina: Home */

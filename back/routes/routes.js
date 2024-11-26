@@ -95,9 +95,40 @@ router.get("/tables/:schema/:data", async (req, res) => {
   }
 });
 
+router.post("/schema/use/:schema", async (req, res) => {
+  const { schema } = req.params;
+
+  try {
+    const [rows] = await pool.query(`SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`, [schema]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: `El esquema ${schema} no existe.`,
+      });
+    }
+
+    await pool.query(`USE \`${schema}\``);
+
+    res.status(200).json({
+      message: `Esquema cambiado a ${schema} correctamente.`,
+    });
+  } catch (error) {
+    console.error("Error al cambiar de esquema:", error);
+    res.status(500).json({
+      message: "Error al cambiar de esquema.",
+      error: error.message,
+    });
+  }
+});
+
 // 4. Consultas Personalizadas
 router.post("/query", async (req, res) => {
   const { query } = req.body;
+
+  if (!query || typeof query !== "string") {
+    return res.status(400).json({ message: "Consulta inválida." });
+  }
+
   if (!pool) {
     return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
   }
@@ -107,14 +138,65 @@ router.post("/query", async (req, res) => {
     res.json({ results });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Error al ejecutar la consulta." });
+    res.status(500).json({ message: "Error al ejecutar la consulta.", error: err.message });
   }
+});
+
+// 5. Eliminar Tabla
+router.delete("/drop/:schema/:table", async (req, res) => {
+  const { schema, table } = req.params;
+
+  if (!pool) {
+    return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
+  }
+
+  try {
+    await pool.query(`USE ${schema}`);
+    const query = `DROP TABLE IF EXISTS \`${table}\``;
+    await pool.query(query);
+
+    res.json({ message: `Tabla ${table} eliminada exitosamente.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al eliminar la tabla.", error: err.message });
+  }
+});
+
+router.delete("/drop/:schema", async (req, res) => {
+  const { schema } = req.params;
+
+  if (!pool) {
+    return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
+  }
+
+  try {
+    const schemaExistsQuery = `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${schema}'`;
+    const [rows] = await pool.query(schemaExistsQuery);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: `El esquema ${schema} no existe.` });
+    }
+
+    const dropSchemaQuery = `DROP SCHEMA IF EXISTS \`${schema}\``;
+    await pool.query(dropSchemaQuery);
+
+    res.json({ message: `Esquema ${schema} eliminado exitosamente.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al eliminar el esquema.", error: err.message });
+  }
+});
+
+// 6. Cierre de sesión
+router.post("/logout", async (req, res) => {
+  pool = null;
+  res.json({ message: "Sesión cerrada." });
 });
 
 // 5. Operaciones CRUD: Agregar un nuevo registro
 router.post("/insert/:schema/:table", async (req, res) => {
   const { schema, table } = req.params;
-  const data = req.body; // Suponemos que el cuerpo contiene los valores del nuevo registro
+  const data = req.body;
 
   if (!pool) {
     return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
@@ -185,5 +267,3 @@ router.post("/logout", async (req, res) => {
   pool = null;
   res.json({ message: "Sesión cerrada." });
 });
-
-//diego
