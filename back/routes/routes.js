@@ -44,11 +44,12 @@ router.post("/auth", async (req, res) => {
 
 // 2. Selección de Base de Datos y Tabla Activa
 router.get("/schemas", async (req, res) => {
-  if (pool === null) {
+  if (!pool) {
     return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
   }
 
   try {
+    // Obtener todas las bases de datos, excluyendo las bases de datos del sistema
     const [schemasRows] = await pool.query("SHOW DATABASES");
     const databases = schemasRows
       .map((row) => row.Database)
@@ -56,14 +57,25 @@ router.get("/schemas", async (req, res) => {
 
     const schemas = [];
 
+    // Obtener información de cada base de datos sin usar `USE`
     for (const database of databases) {
-      await pool.query(`USE ${database}`);
+      // Consultar las tablas en la base de datos
+      const [tablesRows] = await pool.query(
+        `SELECT TABLE_NAME AS table_name 
+         FROM information_schema.TABLES 
+         WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'`,
+        [database]
+      );
+      const tables = tablesRows.map((row) => row.table_name);
 
-      const [tablesRows] = await pool.query("SHOW FULL TABLES WHERE Table_Type = 'BASE TABLE'");
-      const tables = tablesRows.map((row) => Object.values(row)[0]); // Obtener nombres de las tablas
-
-      const [viewsRows] = await pool.query("SHOW FULL TABLES WHERE Table_Type = 'VIEW'");
-      const views = viewsRows.map((row) => Object.values(row)[0]); // Obtener nombres de las vistas
+      // Consultar las vistas en la base de datos
+      const [viewsRows] = await pool.query(
+        `SELECT TABLE_NAME AS view_name 
+         FROM information_schema.TABLES 
+         WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'VIEW'`,
+        [database]
+      );
+      const views = viewsRows.map((row) => row.view_name);
 
       schemas.push({
         database,
@@ -74,10 +86,14 @@ router.get("/schemas", async (req, res) => {
 
     res.json(schemas);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error al obtener los schemas del servidor.", error: err.message });
+    console.error("Error al obtener los schemas del servidor:", err);
+    res.status(500).json({
+      message: "Error al obtener los schemas del servidor.",
+      error: err.message,
+    });
   }
 });
+
 
 // 3. Visualización y Navegación de Datos
 router.get("/tables/:schema/:data", async (req, res) => {
