@@ -84,6 +84,7 @@ const SQLEditor = ({ value, onChange, onExecuteQuery, schemasInfo }) => {
       "SCHEMA",
       "DROP",
       "TABLE",
+      "DATABASE",
     ];
 
     monaco.languages.register({ id: "sql" });
@@ -92,7 +93,7 @@ const SQLEditor = ({ value, onChange, onExecuteQuery, schemasInfo }) => {
       tokenizer: {
         root: [
           [
-            /\b(?:SELECT|TABLE|DROP|SCHEMA|CREATE|USE|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|INNER|OUTER|LEFT|RIGHT|GROUP|BY|ORDER|HAVING|LIMIT|AS|IF|ELSE|CASE|WHEN|THEN|END|AND|OR|NOT|IS|NULL|IN|EXISTS|BETWEEN|LIKE|ASC|DESC|DISTINCT|INTO|VALUES|SET)\b/,
+            /\b(?:SELECT|DATABASE|TABLE|DROP|SCHEMA|CREATE|USE|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|INNER|OUTER|LEFT|RIGHT|GROUP|BY|ORDER|HAVING|LIMIT|AS|IF|ELSE|CASE|WHEN|THEN|END|AND|OR|NOT|IS|NULL|IN|EXISTS|BETWEEN|LIKE|ASC|DESC|DISTINCT|INTO|VALUES|SET)\b/,
             "keyword",
           ],
           [/[a-zA-Z_][a-zA-Z0-9_]*/, "identifier"], // Identificador para nombres de tablas/esquemas
@@ -253,6 +254,24 @@ const SQLEditor = ({ value, onChange, onExecuteQuery, schemasInfo }) => {
           icon: "warning",
         });
         return;
+      }
+
+      const dangerousKeywords = /\b(DELETE|DROP|ALTER|TRUNCATE|UPDATE|INSERT)\b/i;
+
+      if (dangerousKeywords.test(query)) {
+        const confirmation = await Swal.fire({
+          title: "Consulta Peligrosa Detectada",
+          text: "La consulta contiene palabras clave potencialmente destructivas. ¿Deseas continuar?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Sí, ejecutar",
+          cancelButtonText: "Cancelar",
+        });
+
+        if (!confirmation.isConfirmed) {
+          console.log("Ejecución de la consulta cancelada por el usuario.");
+          return;
+        }
       }
 
       await onExecuteQuery(query);

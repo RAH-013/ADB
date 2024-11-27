@@ -8,3 +8,4 @@ export const dropTable = async (schema, table) => await apiAxios.delete(`/drop/$
 export const dropSchema = async (schema) => await apiAxios.delete(`/drop/${schema}`);
 export const executeQuery = async (query) => await apiAxios.post("/query", { query });
 export const changeSchema = async (database) => await apiAxios.post(`/schema/use/${database}`);
+export const getStructureTable = async (schema, table) => await apiAxios.get(`/table/structure/${schema}/${table}`);

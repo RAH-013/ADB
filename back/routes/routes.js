@@ -4,7 +4,7 @@ import { createPool } from "mysql2/promise";
 export const router = Router();
 
 let pool = null;
-
+//  Cierre de sesión
 router.get("/logout", (req, res) => {
   if (pool) {
     pool.end();
@@ -15,7 +15,7 @@ router.get("/logout", (req, res) => {
   }
 });
 
-// 1. Conexión y Autenticación
+// Conexión y Autenticación
 router.post("/auth", async (req, res) => {
   const { host, port, user, password, schema } = req.body;
 
@@ -30,6 +30,7 @@ router.post("/auth", async (req, res) => {
       user,
       password,
       database: schema,
+      multipleStatements: true,
     });
 
     const result = await pool.query("SELECT 1");
@@ -42,14 +43,13 @@ router.post("/auth", async (req, res) => {
   }
 });
 
-// 2. Selección de Base de Datos y Tabla Activa
+// Selección de Base de Datos y Tabla Activa
 router.get("/schemas", async (req, res) => {
   if (!pool) {
     return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
   }
 
   try {
-    // Obtener todas las bases de datos, excluyendo las bases de datos del sistema
     const [schemasRows] = await pool.query("SHOW DATABASES");
     const databases = schemasRows
       .map((row) => row.Database)
@@ -57,9 +57,7 @@ router.get("/schemas", async (req, res) => {
 
     const schemas = [];
 
-    // Obtener información de cada base de datos sin usar `USE`
     for (const database of databases) {
-      // Consultar las tablas en la base de datos
       const [tablesRows] = await pool.query(
         `SELECT TABLE_NAME AS table_name 
          FROM information_schema.TABLES 
@@ -68,7 +66,6 @@ router.get("/schemas", async (req, res) => {
       );
       const tables = tablesRows.map((row) => row.table_name);
 
-      // Consultar las vistas en la base de datos
       const [viewsRows] = await pool.query(
         `SELECT TABLE_NAME AS view_name 
          FROM information_schema.TABLES 
@@ -94,8 +91,7 @@ router.get("/schemas", async (req, res) => {
   }
 });
 
-
-// 3. Visualización y Navegación de Datos
+// Visualización y Navegación de Datos
 router.get("/tables/:schema/:data", async (req, res) => {
   const { schema, data } = req.params;
 
@@ -111,6 +107,7 @@ router.get("/tables/:schema/:data", async (req, res) => {
   }
 });
 
+// Cambia de schema
 router.post("/schema/use/:schema", async (req, res) => {
   const { schema } = req.params;
 
@@ -137,7 +134,7 @@ router.post("/schema/use/:schema", async (req, res) => {
   }
 });
 
-// 4. Consultas Personalizadas
+// Consultas Personalizadas
 router.post("/query", async (req, res) => {
   const { query } = req.body;
 
@@ -158,7 +155,7 @@ router.post("/query", async (req, res) => {
   }
 });
 
-// 5. Eliminar Tabla
+// Eliminar Tabla
 router.delete("/drop/:schema/:table", async (req, res) => {
   const { schema, table } = req.params;
 
@@ -178,6 +175,7 @@ router.delete("/drop/:schema/:table", async (req, res) => {
   }
 });
 
+// Elimina un schema
 router.delete("/drop/:schema", async (req, res) => {
   const { schema } = req.params;
 
@@ -203,83 +201,36 @@ router.delete("/drop/:schema", async (req, res) => {
   }
 });
 
-// 6. Cierre de sesión
-router.post("/logout", async (req, res) => {
-  pool = null;
-  res.json({ message: "Sesión cerrada." });
-});
-
-// 5. Operaciones CRUD: Agregar un nuevo registro
-router.post("/insert/:schema/:table", async (req, res) => {
+// Obtener la estructura de la tabla
+router.get("/table/structure/:schema/:table", async (req, res) => {
   const { schema, table } = req.params;
-  const data = req.body;
 
   if (!pool) {
     return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
   }
 
   try {
-    await pool.query(`USE ${schema}`);
-    const columns = Object.keys(data).join(", ");
-    const values = Object.values(data)
-      .map((value) => `'${value}'`)
-      .join(", ");
-    const query = `INSERT INTO ${table} (${columns}) VALUES (${values})`;
+    const [result] = await pool.query(
+      `SELECT COLUMN_NAME AS field, DATA_TYPE AS type
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`,
+      [schema, table]
+    );
 
-    await pool.query(query);
-    res.json({ message: "Registro insertado exitosamente." });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error al insertar el registro." });
+    if (result.length === 0) {
+      return res.status(404).json({ message: `La tabla ${table} no existe en el esquema ${schema}.` });
+    }
+
+    res.json({
+      schema,
+      table,
+      fields: result,
+    });
+  } catch (error) {
+    console.error("Error al obtener la estructura de la tabla:", error);
+    res.status(500).json({
+      message: "Error al obtener la estructura de la tabla.",
+      error: error.message,
+    });
   }
-});
-
-// 6. Modificar un registro existente
-router.put("/update/:schema/:table/:id", async (req, res) => {
-  const { schema, table, id } = req.params;
-  const data = req.body;
-
-  if (!pool) {
-    return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
-  }
-
-  try {
-    await pool.query(`USE ${schema}`);
-    const setClause = Object.keys(data)
-      .map((key) => `${key}='${data[key]}'`)
-      .join(", ");
-    const query = `UPDATE ${table} SET ${setClause} WHERE id=${id}`;
-
-    await pool.query(query);
-    res.json({ message: "Registro actualizado exitosamente." });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error al actualizar el registro." });
-  }
-});
-
-// 7. Borrar un registro
-router.delete("/delete/:schema/:table/:id", async (req, res) => {
-  const { schema, table, id } = req.params;
-
-  if (!pool) {
-    return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
-  }
-
-  try {
-    await pool.query(`USE ${schema}`);
-    const query = `DELETE FROM ${table} WHERE id=${id}`;
-
-    await pool.query(query);
-    res.json({ message: "Registro eliminado exitosamente." });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error al eliminar el registro." });
-  }
-});
-
-// 8. Cierre de sesión
-router.post("/logout", async (req, res) => {
-  pool = null;
-  res.json({ message: "Sesión cerrada." });
 });
