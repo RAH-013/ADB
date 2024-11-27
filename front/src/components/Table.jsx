@@ -290,7 +290,25 @@ function Table({ rows, columns, title, schema, onClose }) {
             return `
               <div class="form-group">
                 <label for="${field.name}">${field.name.charAt(0).toUpperCase() + field.name.slice(1)}</label>
-                <input type="${field.type === "date" ? "date" : field.type === "decimal" ? "number" : "text"}"
+               <input type="${
+                 field.type === "date"
+                   ? "date"
+                   : field.type === "datetime" || field.type === "timestamp"
+                   ? "datetime-local"
+                   : field.type === "time"
+                   ? "time"
+                   : field.type === "decimal" || field.type === "float" || field.type === "double"
+                   ? "number"
+                   : field.type === "int" ||
+                     field.type === "bigint" ||
+                     field.type === "tinyint" ||
+                     field.type === "smallint" ||
+                     field.type === "mediumint"
+                   ? "number"
+                   : field.type === "boolean"
+                   ? "checkbox"
+                   : "text"
+               }"
                        name="${field.name}"
                        id="${field.name}" 
                        class="swal2-input" 
@@ -376,7 +394,25 @@ function Table({ rows, columns, title, schema, onClose }) {
           return `
             <div class="form-group">
               <label for="${field.name}">${field.name.charAt(0).toUpperCase() + field.name.slice(1)}</label>
-              <input type="${field.type === "date" ? "date" : field.type === "decimal" ? "number" : "text"}"
+              <input type="${
+                field.type === "date"
+                  ? "date"
+                  : field.type === "datetime" || field.type === "timestamp"
+                  ? "datetime-local"
+                  : field.type === "time"
+                  ? "time"
+                  : field.type === "decimal" || field.type === "float" || field.type === "double"
+                  ? "number"
+                  : field.type === "int" ||
+                    field.type === "bigint" ||
+                    field.type === "tinyint" ||
+                    field.type === "smallint" ||
+                    field.type === "mediumint"
+                  ? "number"
+                  : field.type === "boolean"
+                  ? "checkbox"
+                  : "text"
+              }"
                      name="${field.name}"
                      id="${field.name}" 
                      class="swal2-input" 
@@ -427,7 +463,7 @@ function Table({ rows, columns, title, schema, onClose }) {
       } catch (error) {
         Swal.fire({
           title: "Error",
-          text: `Hubo un problema al crear el registro: ${error.message}`,
+          text: `Hubo un problema al crear el registro: ${error.response.data.error}`,
           icon: "error",
         });
       }

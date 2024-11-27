@@ -86,6 +86,7 @@ const SQLEditor = ({ value, onChange, onExecuteQuery, schemasInfo }) => {
       "TABLE",
       "DATABASE",
       "ALTER",
+      "DATEDIFF",
     ];
 
     monaco.languages.register({ id: "sql" });
@@ -94,10 +95,10 @@ const SQLEditor = ({ value, onChange, onExecuteQuery, schemasInfo }) => {
       tokenizer: {
         root: [
           [
-            /\b(?:SELECT|ALTER|DATABASE|TABLE|DROP|SCHEMA|CREATE|USE|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|INNER|OUTER|LEFT|RIGHT|GROUP|BY|ORDER|HAVING|LIMIT|AS|IF|ELSE|CASE|WHEN|THEN|END|AND|OR|NOT|IS|NULL|IN|EXISTS|BETWEEN|LIKE|ASC|DESC|DISTINCT|INTO|VALUES|SET)\b/,
+            /\b(?:SELECT|DATEDIFF|ALTER|DATABASE|TABLE|DROP|SCHEMA|CREATE|USE|FROM|WHERE|INSERT|UPDATE|DELETE|JOIN|INNER|OUTER|LEFT|RIGHT|GROUP|BY|ORDER|HAVING|LIMIT|AS|IF|ELSE|CASE|WHEN|THEN|END|AND|OR|NOT|IS|NULL|IN|EXISTS|BETWEEN|LIKE|ASC|DESC|DISTINCT|INTO|VALUES|SET)\b/,
             "keyword",
           ],
-          [/[a-zA-Z_][a-zA-Z0-9_]*/, "identifier"], // Identificador para nombres de tablas/esquemas
+          [/[a-zA-Z_][a-zA-Z0-9_]*/, "identifier"],
           [/'(?:\\'|[^'])*'/, "string"],
           [/"(?:\\"|[^"])*"/, "string"],
           [/`(?:\\`|[^`])*`/, "string"],
@@ -267,6 +268,7 @@ const SQLEditor = ({ value, onChange, onExecuteQuery, schemasInfo }) => {
           showCancelButton: true,
           confirmButtonText: "Sí, ejecutar",
           cancelButtonText: "Cancelar",
+          reverseButtons: true,
         });
 
         if (!confirmation.isConfirmed) {
