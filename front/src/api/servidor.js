@@ -12,3 +12,5 @@ export const getStructureTable = async (schema, table) => await apiAxios.get(`/t
 export const createRow = async (schema, table, newData) => await apiAxios.post(`add/${schema}/${table}`, newData);
 export const deleteRow = async (schema, table, id) => await apiAxios.delete(`drop/${schema}/${table}/${id}`);
 export const updateRow = async (schema, table, id, newData) => await apiAxios.put(`update/${schema}/${table}/${id}`, newData);
+
+export const getForm = async (schema, table) => await apiAxios.get(`/form/${schema}/${table}`);

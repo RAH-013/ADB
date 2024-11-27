@@ -255,26 +255,82 @@ router.put("/update/:schema/:table/:id", async (req, res) => {
   const { schema, table, id } = req.params;
   const data = req.body;
 
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return res.status(400).json({ message: "Datos inválidos para actualizar." });
+  // Depurar los datos recibidos
+  console.log("Datos recibidos:", data);
+
+  // Verificar que los datos sean válidos (no vacío)
+  if (!data || typeof data !== "object" || Array.isArray(data) || Object.keys(data).length === 0) {
+    return res.status(400).json({ message: "Datos inválidos o vacíos para actualizar." });
   }
+
+  // Verificar si la conexión a la base de datos está disponible
+  if (!pool) {
+    return res.status(500).json({ message: "No se ha establecido una conexión con el servidor." });
+  }
+
+  try {
+    // Generar las partes de la consulta de actualización solo si hay propiedades en el objeto 'data'
+    const updates = Object.keys(data)
+      .map((col) => `\`${col}\` = ?`)
+      .join(", ");
+
+    // Asegurar que el id es un valor válido
+    const values = [...Object.values(data), id];
+
+    // Verificar si se generaron campos para actualizar
+    if (!updates) {
+      return res.status(400).json({ message: "No hay campos para actualizar." });
+    }
+
+    // Crear la consulta SQL
+    const query = `UPDATE \`${schema}\`.\`${table}\` SET ${updates} WHERE \`id\` = ?`;
+
+    // Ejecutar la consulta
+    const [result] = await pool.query(query, values);
+
+    // Verificar si se actualizó algún registro
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "No se encontró el registro para actualizar." });
+    }
+
+    res.json({ message: "Registro actualizado exitosamente." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al actualizar el registro.", error: err.message });
+  }
+});
+
+// Obtener la estructura de una tabla para crear un formulario dinámico
+router.get("/form/:schema/:table", async (req, res) => {
+  const { schema, table } = req.params;
 
   if (!pool) {
     return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
   }
 
   try {
-    const updates = Object.keys(data)
-      .map((col) => `\`${col}\` = ?`)
-      .join(", ");
-    const values = [...Object.values(data), id];
+    // Consulta para obtener la información de las columnas de la tabla
+    const [columns] = await pool.query(
+      `
+      SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`,
+      [schema, table]
+    );
 
-    const query = `UPDATE \`${schema}\`.\`${table}\` SET ${updates} WHERE id = ?`;
-    await pool.query(query, values);
+    // Formatear los datos para generar el formulario
+    const formFields = columns.map((column) => ({
+      name: column.COLUMN_NAME,
+      type: column.DATA_TYPE,
+      required: column.IS_NULLABLE === "NO" ? true : false,
+    }));
 
-    res.json({ message: "Registro actualizado exitosamente." });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error al actualizar el registro.", error: err.message });
+    res.json({ formFields });
+  } catch (error) {
+    console.error("Error al obtener la estructura de la tabla:", error);
+    res.status(500).json({
+      message: "Error al obtener la estructura de la tabla.",
+      error: error.message,
+    });
   }
 });

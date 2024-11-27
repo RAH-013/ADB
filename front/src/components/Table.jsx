@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { dropTable, createRow, deleteRow, updateRow } from "../api/servidor";
+import { dropTable, createRow, deleteRow, updateRow, getForm } from "../api/servidor";
 import Swal from "sweetalert2";
 
 const esES = {
@@ -231,13 +231,14 @@ function Table({ rows, columns, title, schema, onClose }) {
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            const res = await deleteRow(selectedRowId);
+            const res = await deleteRow(schema, title, selectedRowId);
             if (res.status === 200) {
               Swal.fire({
                 title: "Éxito",
                 text: res.data.message,
                 icon: "success",
               }).then(() => {
+                onClose();
                 setSelectedRowId([]);
               });
             }
@@ -259,65 +260,165 @@ function Table({ rows, columns, title, schema, onClose }) {
     }
   };
 
-  const handleUpdateRow = () => {
-    if (selectedRowId) {
-      Swal.fire({
-        title: "Actualizar registro",
-        text: "¿Estás seguro de actualizar el registro seleccionado?",
-        icon: "info",
-        showCancelButton: true,
-        confirmButtonText: "Actualizar",
-        cancelButtonText: "Cancelar",
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            const res = await updateRow(selectedRowId);
-            if (res.status === 200) {
-              Swal.fire({
-                title: "Éxito",
-                text: res.data.message,
-                icon: "success",
-              });
+  const handleUpdateRow = async () => {
+    if (selectedRowId.length === 1) {
+      const rowToUpdate = rows.find((row) => row.id === selectedRowId[0]);
+      const formFields = await getForm(schema, title);
+      const formData = formFields.data.formFields;
+
+      if (!formData || formData.length === 0) {
+        Swal.fire({
+          title: "Error",
+          text: "No se pudieron cargar los campos del formulario.",
+          icon: "error",
+        });
+        return;
+      }
+
+      const formHtml = `
+      <form id="dynamicForm">
+        ${formData
+          .map((field) => {
+            let value = rowToUpdate[field.name] || "";
+
+            // Formatear el valor si es una fecha
+            if (field.type === "date" && value) {
+              const date = new Date(value);
+              value = date.toISOString().split("T")[0]; // Formato YYYY-MM-DD
             }
-          } catch (error) {
+
+            return `
+              <div class="form-group">
+                <label for="${field.name}">${field.name.charAt(0).toUpperCase() + field.name.slice(1)}</label>
+                <input type="${field.type === "date" ? "date" : field.type === "decimal" ? "number" : "text"}"
+                       name="${field.name}"
+                       id="${field.name}" 
+                       class="swal2-input" 
+                       autocomplete="off"
+                       value="${value}"
+                       placeholder="Introduce ${field.name}" 
+                       ${field.required ? "required" : ""} />
+              </div>
+            `;
+          })
+          .join("")}
+      </form>
+    `;
+
+      const { value: updatedRowData, isConfirmed } = await Swal.fire({
+        title: "Editar registro",
+        html: formHtml,
+        showCancelButton: true,
+        focusConfirm: false,
+        preConfirm: () => {
+          const form = document.getElementById("dynamicForm");
+          const formData = new FormData(form);
+          const formObj = {};
+          formData.forEach((value, key) => {
+            formObj[key] = value.trim();
+          });
+
+          if (Object.values(formObj).some((val) => val === "")) {
+            Swal.showValidationMessage("Todos los campos deben estar completos");
+            return false;
+          }
+
+          return formObj;
+        },
+      });
+
+      if (isConfirmed && updatedRowData) {
+        try {
+          const res = await updateRow(schema, title, selectedRowId[0], updatedRowData);
+          if (res.status === 200) {
             Swal.fire({
-              title: "Error",
-              text: `Error al actualizar el registro: ${error.message}`,
-              icon: "error",
+              title: "Éxito",
+              text: res.data.message,
+              icon: "success",
+            }).then(() => {
+              onClose();
             });
           }
+        } catch (error) {
+          Swal.fire({
+            title: "Error",
+            text: `Hubo un problema al actualizar el registro: ${error.message}`,
+            icon: "error",
+          });
         }
-      });
+      }
     } else {
       Swal.fire({
         title: "Selecciona un registro",
-        text: "Debes seleccionar un registro para actualizar.",
+        text: "Debes seleccionar un único registro para actualizar.",
         icon: "warning",
       });
     }
   };
 
   const handleCreateRow = async () => {
-    const { value: newRowData } = await Swal.fire({
-      title: "Nuevo registro",
-      input: "textarea",
-      inputLabel: "Introduce los datos del nuevo registro",
-      inputPlaceholder: "Datos del nuevo registro...",
+    const formFields = await getForm(schema, title);
+    const formData = formFields.data.formFields;
+
+    if (!formData || formData.length === 0) {
+      Swal.fire({
+        title: "Error",
+        text: "No se pudieron cargar los campos del formulario.",
+        icon: "error",
+      });
+      return;
+    }
+
+    const formHtml = `
+    <form id="dynamicForm">
+      ${formData
+        .map((field) => {
+          return `
+            <div class="form-group">
+              <label for="${field.name}">${field.name.charAt(0).toUpperCase() + field.name.slice(1)}</label>
+              <input type="${field.type === "date" ? "date" : field.type === "decimal" ? "number" : "text"}"
+                     name="${field.name}"
+                     id="${field.name}" 
+                     class="swal2-input" 
+                     autocomplete="off"
+                     placeholder="Introduce ${field.name}" 
+                     ${field.required ? "required" : ""} />
+            </div>
+          `;
+        })
+        .join("")}
+    </form>
+  `;
+
+    const { value: newRowData, isConfirmed } = await Swal.fire({
+      title: "Crear registro",
+      html: formHtml,
       showCancelButton: true,
-      inputValidator: (value) => {
-        if (!value) {
-          return "Por favor ingresa datos para el nuevo registro";
+      focusConfirm: false,
+      preConfirm: () => {
+        const form = document.getElementById("dynamicForm");
+        const formData = new FormData(form);
+        const formObj = {};
+        formData.forEach((value, key) => {
+          formObj[key] = value.trim();
+        });
+
+        if (Object.values(formObj).some((val) => val === "")) {
+          Swal.showValidationMessage("Todos los campos deben estar completos");
+          return false;
         }
+
+        return formObj;
       },
     });
 
-    if (newRowData) {
+    if (isConfirmed && newRowData) {
       try {
-        const res = await createRow(newRowData, schema, title);
+        const res = await createRow(schema, title, newRowData); // Llamada a la función createRow
         if (res.status === 200) {
           Swal.fire({
             title: "Éxito",
-            text: "Fila creada correctamente.",
+            text: res.data.message,
             icon: "success",
           }).then(() => {
             onClose();
@@ -326,7 +427,7 @@ function Table({ rows, columns, title, schema, onClose }) {
       } catch (error) {
         Swal.fire({
           title: "Error",
-          text: `Hubo un problema al crear la fila: ${error.message}`,
+          text: `Hubo un problema al crear el registro: ${error.message}`,
           icon: "error",
         });
       }
@@ -340,7 +441,6 @@ function Table({ rows, columns, title, schema, onClose }) {
         <div className="tableActions">
           {schema && (
             <>
-              {/* Solo muestra los botones de editar y eliminar si hay una fila seleccionada */}
               {selectedRowId.length > 0 && (
                 <>
                   <button className="closeTable" onClick={handleDeleteRow} title="Eliminar registro">
