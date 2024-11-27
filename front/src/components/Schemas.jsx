@@ -60,7 +60,7 @@ function Schemas({ schemasInfo, onSchemaChange, onItemClick, onReloadSchemas }) 
         } catch (error) {
           Swal.fire({
             title: "Error",
-            text: "Hubo un problema al conectar con el servidor: " + error,
+            text: "Hubo un problema al intentar eliminar el schema: " + error,
             icon: "error",
           });
         }

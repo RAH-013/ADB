@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { dropTable } from "../api/servidor";
+import { dropTable, createRow, deleteRow, updateRow } from "../api/servidor";
 import Swal from "sweetalert2";
 
 const esES = {
@@ -184,44 +185,151 @@ const esES = {
 };
 
 function Table({ rows, columns, title, schema, onClose }) {
-  const drop = () => {
-    try {
+  const [selectedRowId, setSelectedRowId] = useState([]);
+
+  const handleDrop = () => {
+    Swal.fire({
+      title: "¿Estás seguro?",
+      text: `Confirma para eliminar la tabla: ${title}`,
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Eliminar",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const res = await dropTable(schema, title);
+          if (res.status === 200) {
+            Swal.fire({
+              title: "Éxito",
+              text: res.data.message,
+              icon: "success",
+            }).then(() => {
+              onClose();
+            });
+          }
+        } catch (error) {
+          Swal.fire({
+            title: "Error",
+            text: `Hubo un problema al eliminar la tabla: ${error.message}`,
+            icon: "error",
+          });
+        }
+      }
+    });
+  };
+
+  const handleDeleteRow = () => {
+    if (selectedRowId) {
       Swal.fire({
         title: "¿Estás seguro?",
-        text: "Confirma para eliminar la tabla: " + title,
-        icon: "info",
+        text: "Confirma para eliminar el registro seleccionado.",
+        icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Eliminar",
         cancelButtonText: "Cancelar",
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            const res = await dropTable(schema, title);
+            const res = await deleteRow(selectedRowId);
             if (res.status === 200) {
               Swal.fire({
                 title: "Éxito",
                 text: res.data.message,
                 icon: "success",
               }).then(() => {
-                onClose();
+                setSelectedRowId([]);
               });
             }
           } catch (error) {
             Swal.fire({
               title: "Error",
-              text: "Hubo un problema al eliminar la tabla: " + error,
+              text: `Error al eliminar el registro: ${error.message}`,
               icon: "error",
             });
           }
         }
       });
-    } catch (error) {
-      console.error(error);
+    } else {
       Swal.fire({
-        title: "Error",
-        text: "Error al tratar de borrar la tabla: " + error,
-        icon: "error",
+        title: "Selecciona un registro",
+        text: "Debes seleccionar un registro para eliminar.",
+        icon: "warning",
       });
+    }
+  };
+
+  const handleUpdateRow = () => {
+    if (selectedRowId) {
+      Swal.fire({
+        title: "Actualizar registro",
+        text: "¿Estás seguro de actualizar el registro seleccionado?",
+        icon: "info",
+        showCancelButton: true,
+        confirmButtonText: "Actualizar",
+        cancelButtonText: "Cancelar",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const res = await updateRow(selectedRowId);
+            if (res.status === 200) {
+              Swal.fire({
+                title: "Éxito",
+                text: res.data.message,
+                icon: "success",
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              title: "Error",
+              text: `Error al actualizar el registro: ${error.message}`,
+              icon: "error",
+            });
+          }
+        }
+      });
+    } else {
+      Swal.fire({
+        title: "Selecciona un registro",
+        text: "Debes seleccionar un registro para actualizar.",
+        icon: "warning",
+      });
+    }
+  };
+
+  const handleCreateRow = async () => {
+    const { value: newRowData } = await Swal.fire({
+      title: "Nuevo registro",
+      input: "textarea",
+      inputLabel: "Introduce los datos del nuevo registro",
+      inputPlaceholder: "Datos del nuevo registro...",
+      showCancelButton: true,
+      inputValidator: (value) => {
+        if (!value) {
+          return "Por favor ingresa datos para el nuevo registro";
+        }
+      },
+    });
+
+    if (newRowData) {
+      try {
+        const res = await createRow(newRowData, schema, title);
+        if (res.status === 200) {
+          Swal.fire({
+            title: "Éxito",
+            text: "Fila creada correctamente.",
+            icon: "success",
+          }).then(() => {
+            onClose();
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          title: "Error",
+          text: `Hubo un problema al crear la fila: ${error.message}`,
+          icon: "error",
+        });
+      }
     }
   };
 
@@ -230,18 +338,29 @@ function Table({ rows, columns, title, schema, onClose }) {
       <div className="headerTable">
         <h2>{title}</h2>
         <div className="tableActions">
-          {schema !== "" && (
+          {schema && (
             <>
-              <button className="closeTable" type="button" title="Eliminar tabla" onClick={drop}>
-                <i className="fa-solid fa-trash"></i>
+              {/* Solo muestra los botones de editar y eliminar si hay una fila seleccionada */}
+              {selectedRowId.length > 0 && (
+                <>
+                  <button className="closeTable" onClick={handleDeleteRow} title="Eliminar registro">
+                    <i className="fa-solid fa-eraser"></i>
+                  </button>
+                  <button className="closeTable" onClick={handleUpdateRow} title="Editar registro">
+                    <i className="fa-solid fa-pen"></i>
+                  </button>
+                  <hr />
+                </>
+              )}
+              <button className="closeTable" onClick={handleCreateRow} title="Agregar registro">
+                <i className="fa-solid fa-plus"></i>
               </button>
-              <button className="closeTable" type="button" title="Editar registro">
-                <i className="fa-solid fa-pen-to-square"></i>
+              <button className="closeTable" onClick={handleDrop} title="Eliminar tabla">
+                <i className="fa-solid fa-trash"></i>
               </button>
             </>
           )}
-
-          <button className="closeTable" type="button" title="Cerrar tabla" onClick={onClose}>
+          <button className="closeTable" onClick={onClose} title="Cerrar tabla">
             <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -253,8 +372,14 @@ function Table({ rows, columns, title, schema, onClose }) {
           columns={columns}
           pageSize={5}
           rowsPerPageOptions={[5]}
-          disableRowSelectionOnClick
           localeText={esES}
+          checkboxSelection
+          disableRowSelectionOnClick
+          disableMultipleRowSelection
+          onRowSelectionModelChange={(newSelection) => {
+            setSelectedRowId(newSelection);
+          }}
+          rowSelectionModel={selectedRowId}
           slots={{
             toolbar: GridToolbar,
           }}
@@ -262,9 +387,7 @@ function Table({ rows, columns, title, schema, onClose }) {
             toolbar: {
               printOptions: { disableToolbarButton: true },
               csvOptions: { fileName: title },
-              sx: {
-                backgroundColor: "white",
-              },
+              sx: { backgroundColor: "white" },
             },
           }}
         />

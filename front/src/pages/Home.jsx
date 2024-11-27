@@ -43,7 +43,6 @@ function Home() {
         });
 
         setMinHeight("40%");
-
         setColumns(
           columnKeys.map((key) => ({
             field: key,
