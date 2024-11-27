@@ -238,12 +238,6 @@ function Table({ rows, columns, title, schema, onClose }) {
               <button className="closeTable" type="button" title="Editar registro">
                 <i className="fa-solid fa-pen-to-square"></i>
               </button>
-              <button className="closeTable" type="button" title="Ver propiedades">
-                <i className="fa-solid fa-gear"></i>
-              </button>
-              <button className="closeTable" type="button" title="Ver información">
-                <i className="fa-solid fa-circle-info"></i>
-              </button>
             </>
           )}
 

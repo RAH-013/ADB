@@ -201,36 +201,80 @@ router.delete("/drop/:schema", async (req, res) => {
   }
 });
 
-// Obtener la estructura de la tabla
-router.get("/table/structure/:schema/:table", async (req, res) => {
+// Crear un nuevo registro en una tabla específica
+router.post("/add/:schema/:table", async (req, res) => {
   const { schema, table } = req.params;
+  const data = req.body;
+
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return res.status(400).json({ message: "Datos inválidos para insertar." });
+  }
 
   if (!pool) {
     return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
   }
 
   try {
-    const [result] = await pool.query(
-      `SELECT COLUMN_NAME AS field, DATA_TYPE AS type
-       FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`,
-      [schema, table]
-    );
+    const columns = Object.keys(data)
+      .map((col) => `\`${col}\``)
+      .join(", ");
+    const values = Object.values(data)
+      .map((val) => (typeof val === "string" ? `'${val}'` : val))
+      .join(", ");
+    const query = `INSERT INTO \`${schema}\`.\`${table}\` (${columns}) VALUES (${values})`;
 
-    if (result.length === 0) {
-      return res.status(404).json({ message: `La tabla ${table} no existe en el esquema ${schema}.` });
-    }
+    await pool.query(query);
+    res.json({ message: "Registro agregado exitosamente." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al agregar el registro.", error: err.message });
+  }
+});
 
-    res.json({
-      schema,
-      table,
-      fields: result,
-    });
-  } catch (error) {
-    console.error("Error al obtener la estructura de la tabla:", error);
-    res.status(500).json({
-      message: "Error al obtener la estructura de la tabla.",
-      error: error.message,
-    });
+// Eliminar un registro específico en una tabla específica
+router.delete("/drop/:schema/:table/:id", async (req, res) => {
+  const { schema, table, id } = req.params;
+
+  if (!pool) {
+    return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
+  }
+
+  try {
+    const query = `DELETE FROM \`${schema}\`.\`${table}\` WHERE id = ?`;
+    await pool.query(query, [id]);
+
+    res.json({ message: "Registro eliminado exitosamente." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al eliminar el registro.", error: err.message });
+  }
+});
+
+// Actualizar un registro específico en una tabla específica
+router.put("/update/:schema/:table/:id", async (req, res) => {
+  const { schema, table, id } = req.params;
+  const data = req.body;
+
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return res.status(400).json({ message: "Datos inválidos para actualizar." });
+  }
+
+  if (!pool) {
+    return res.status(400).json({ message: "No se ha establecido una conexión con el servidor." });
+  }
+
+  try {
+    const updates = Object.keys(data)
+      .map((col) => `\`${col}\` = ?`)
+      .join(", ");
+    const values = [...Object.values(data), id];
+
+    const query = `UPDATE \`${schema}\`.\`${table}\` SET ${updates} WHERE id = ?`;
+    await pool.query(query, values);
+
+    res.json({ message: "Registro actualizado exitosamente." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al actualizar el registro.", error: err.message });
   }
 });
